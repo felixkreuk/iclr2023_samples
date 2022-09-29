@@ -73,25 +73,46 @@ def create_table(parsed_dir, cols=None, title=""):
         </tbody>
     </table>
     </center>
+    </br>
     """)
 
     cols = get_cols(parsed_dir) if cols is None else cols.values()
     return template.render(cols=cols, parsed_dir=parsed_dir, title=title)
 
 
-def create_html(content):
+def create_html(content, title=""):
     template = Template("""
     <html>
     <head>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@2.1.0/build/pure-min.css" integrity="sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH" crossorigin="anonymous">
+    <style>
+        .container{
+            position: relative;
+            background:  rgb(22, 38, 67); /* For browsers that do not support gradients */
+            /* background: -webkit-linear-gradient(color1, color2); /* For Safari 5.1 to 6.0 */
+            /* background: -o-linear-gradient(color1, color2); /* For Opera 11.1 to 12.0 */
+            /* background: -moz-linear-gradient(color1, color2); /* For Firefox 3.6 to 15 */
+            /* background: linear-gradient(color1, color2);  /* Standard syntax */
+            background-size: cover;
+            height: auto;
+            padding: 2%;
+        }
+    </style>
     </head>
     <title>Samples</title>
+    <div class="container" align="center" style="color:white;">
+        <h1>AudioGen: Textually Guided Audio Generation</h1>
+        <h3><a href="https://felixkreuk.github.io" style="color:white;">Felix Kreuk</a>, Gabriel Synnaeve, Adam Polyak, Uriel Singer, Alexandre Défossez, Jade Copet, Devi Parikh, Yaniv Taigman, Yossi Adi</h3>
+        <p style="text-align: justify; width: 50%">
+        We tackle the problem of generating audio samples conditioned on descriptive text captions. In this work, we propose AudioGen, an auto-regressive generative model that generates audio samples conditioned on text inputs. AudioGen operates on a learnt discrete audio representation. The task of text-to-audio generation poses multiple challenges. Due to the way audio travels through a medium, differentiating ``objects'' can be a difficult task (e.g., separating multiple people simultaneously speaking). This is further complicated by real-world recording conditions (e.g., background noise, reverberation, etc.). Scarce text annotations impose another constraint, limiting the ability to scale models. Finally, modeling high-fidelity audio requires encoding audio at high sampling rate, leading to extremely long sequences. To alleviate the aforementioned challenges we propose an augmentation technique that mixes different audio samples, driving the model to internally learn to separate multiple sources. We curated 10 datasets containing different types of audio and text annotations to handle the scarcity of text-audio data points. For faster inference, we explore the use of multi-stream modeling, allowing the use of shorter sequences while maintaining a similar bitrate and perceptual quality. We apply classifier-free guidance to improve adherence to text. Comparing to the evaluated baselines, AudioGen outperforms over both objective and subjective metrics. Finally, we explore the ability of the proposed method to generate audio continuation conditionally and unconditionally.
+        </p>
+    </div>
     <body>
     {{ content }}
     </body>
     </html>
     """)
-    return template.render(content=content)
+    return template.render(content=content, title=title)
 
 
 def main():
@@ -101,12 +122,12 @@ def main():
 
     tables = []
 
-    title = "AudioGen vs. baselines"
+    title = "AudioGen samples"
     algos = {
         "desc": "desc",
         "32factor_1streams_2048codesPerBook_noMixing": "AudioGen-base no mixing",
         "32factor_1streams_2048codesPerBook": "AudioGen-base with mixing",
-        "large_32factor_1streams_2048codesPerBook": "AudioGen-large with mixing",
+        "large_32factor_1streams_2048codesPerBook": "<b>AudioGen-large with mixing</b>",
         "diffsound_trim": "DiffSound",
         "gt_trim": "Ground Truth",
     }
@@ -115,60 +136,19 @@ def main():
         "whistling_with_wind_blowing",
         "male_speaking_with_many_people_cheering_in_background",
         "a_man_is_speaking_while_typing_on_a_keyboard",
+        "sirens_and_a_humming_engine_approach_and_pass",
+        "male_speech_with_horns_honking_in_the_background",
+        "drums_and_music_playing_with_a_man_speaking",
+        "beep_then_male_speaking_multiple_times",
         "a_cat_meowing_and_young_female_speaking",
+        "a_man_speaking_followed_by_another_man_speaking_in_the_background_as_a_motorcycle_engine_runs_idle",
         "a_duck_quacking_as_birds_chirp_and_a_pigeon_cooing",
-        "a_blaring_siren_from_a_vehicle_passes_by_then_echoes_and_fades_into_the_distance",
         "a_baby_continuously_crying",
         "continuous_laughter_and_chuckling",
-        "railroad_crossing_signal_followed_by_a_train_passing_and_blowing_horn",
     ]
     tables += [create_table(parse_dir(args.dir, cols=algos, whitelist=files), cols=algos, title=title)]
 
-    title = "Classifier-free guidance"
-    algos = {
-        "desc": "desc",
-        "large_32factor_1streams_2048codesPerBook_cfg1": "gamma=1",
-        "large_32factor_1streams_2048codesPerBook_cfg2": "gamma=2",
-        "large_32factor_1streams_2048codesPerBook_cfg3": "gamma=3",
-        "large_32factor_1streams_2048codesPerBook_cfg4": "gamma=4",
-        "large_32factor_1streams_2048codesPerBook_cfg5": "gamma=5",
-    }
-    # files = ["a_cat_meowing_twice", "a_baby_continuously_crying"]
-    tables += [create_table(parse_dir(args.dir, cols=algos, whitelist=files), cols=algos, title=title)]
-
-    "* Under the 'Random audio prompt' column we feed the model with random audio as prompt, and the text condition from the 'desc' column"
-    title = "Audio continuation from 1s"
-    algos = {
-        "desc": "desc",
-        "len4_audioCont_audioPrefix1_noText": "No text",
-        "len4_audioCont_audioPrefix1": "Original text",
-        "len4_audioCont_audioPrefix1_randomText": "Random audio prompt",
-    }
-    files_audio_cont = [
-        "a_man_speaks_as_birds_chirp_and_dogs_bark",
-        "a_baby_continuously_crying",
-        "a_man_is_speaking_while_typing_on_a_keyboard",
-        "a_cat_meowing_and_young_female_speaking",
-        "continuous_laughter_and_chuckling",
-        "railroad_crossing_signal_followed_by_a_train_passing_and_blowing_horn",
-        "male_speaking_with_many_people_cheering_in_background",
-        "a_blaring_siren_from_a_vehicle_passes_by_then_echoes_and_fades_into_the_distance",
-        "a_duck_quacking_as_birds_chirp_and_a_pigeon_cooing",
-        "whistling_with_wind_blowing",
-    ]
-    tables += [create_table(parse_dir(args.dir, cols=algos, whitelist=files_audio_cont), cols=algos, title=title)]
-
-    title = "Multi-stream (large)"
-    algos = {
-        "desc": "desc",
-        "large_32factor_1streams_2048codesPerBook": "1 stream",
-        "large_64factor_2streams_1024codesPerBook": "2 streams",
-        "large_128factor_4streams_512codesPerBook": "4 streams"
-    }
-    # files = ["a_cat_meowing_twice", "a_baby_continuously_crying"]
-    tables += [create_table(parse_dir(args.dir, cols=algos, whitelist=files), cols=algos, title=title)]
-
-    html = create_html("".join(tables))
+    html = create_html("".join(tables), title="AudioGen: Textually Guided Audio Generation")
     open(args.dir / "report.html", "w").write(html)
 
 
